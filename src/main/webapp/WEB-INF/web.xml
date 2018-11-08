@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app xmlns="http://java.sun.com/xml/ns/j2ee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"
+         version="2.4">
+
+    <display-name>Device Control</display-name>
+    <description>
+    </description>
+
+    <servlet>
+        <servlet-name>controlSystem</servlet-name>
+        <servlet-class>org.servlet.ControlSystemServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>videoRecordsServlet</servlet-name>
+        <servlet-class>org.servlet.VideoRecordsServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>logoutServlet</servlet-name>
+        <servlet-class>org.servlet.LogoutServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>driveServlet</servlet-name>
+        <servlet-class>org.servlet.DriveServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>camControlServlet</servlet-name>
+        <servlet-class>org.servlet.CamControlServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>toolsServlet</servlet-name>
+        <servlet-class>org.servlet.ToolsServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>calibrateServlet</servlet-name>
+        <servlet-class>org.servlet.CalibrateEnginesServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>logoutServlet</servlet-name>
+        <url-pattern>/logout</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>controlSystem</servlet-name>
+        <url-pattern>/controlSystem</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>videoRecordsServlet</servlet-name>
+        <url-pattern>/videoRecords</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>driveServlet</servlet-name>
+        <url-pattern>/drive</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>camControlServlet</servlet-name>
+        <url-pattern>/camControl</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>toolsServlet</servlet-name>
+        <url-pattern>/tools</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>calibrateServlet</servlet-name>
+        <url-pattern>/calibrate</url-pattern>
+    </servlet-mapping>
+
+    <listener>
+        <listener-class>org.core.device.Device</listener-class>
+    </listener>
+
+    <security-constraint>
+        <display-name>Restricted GET To Employees</display-name>
+        <web-resource-collection>
+            <web-resource-name>Restricted Access</web-resource-name>
+            <url-pattern>/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>login</role-name>
+        </auth-constraint>
+        <!--<user-data-constraint>-->
+            <!--<transport-guarantee>NONE</transport-guarantee>-->
+        <!--</user-data-constraint>-->
+    </security-constraint>
+
+    <security-role>
+        <role-name>login</role-name>
+    </security-role>
+
+    <login-config>
+        <auth-method>FORM</auth-method>
+        <form-login-config>
+            <form-login-page>/login.html</form-login-page>
+            <form-error-page>/login-failed.html</form-error-page>
+        </form-login-config>
+    </login-config>
+
+    <session-config>
+        <session-timeout>20</session-timeout>    <!-- 30 minutes -->
+    </session-config>
+
+    <welcome-file-list>
+        <welcome-file>controlDevice.jsp</welcome-file>
+    </welcome-file-list>
+
+</web-app>
+

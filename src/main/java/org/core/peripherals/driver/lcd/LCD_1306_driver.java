@@ -1,0 +1,318 @@
+package org.core.peripherals.driver.lcd;
+
+import com.pi4j.io.i2c.I2CBus;
+import com.pi4j.io.i2c.I2CDevice;
+import com.pi4j.io.i2c.I2CFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+/**
+ * Created by jane on 01.04.17.
+ */
+public class LCD_1306_driver {
+    private int font8x8[] =
+            {
+                    0x08,                                     // width
+                    0x08,                                     // height
+
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // <space>
+                    0x00, 0x00, 0x00, 0x00, 0x5F, 0x00, 0x00, 0x00,  // !
+                    0x00, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00,  // "
+                    0x00, 0x24, 0x7E, 0x24, 0x24, 0x7E, 0x24, 0x00,  // #
+                    0x00, 0x2E, 0x2A, 0x7F, 0x2A, 0x3A, 0x00, 0x00,  // $
+                    0x00, 0x46, 0x26, 0x10, 0x08, 0x64, 0x62, 0x00,  // %
+                    0x00, 0x20, 0x54, 0x4A, 0x54, 0x20, 0x50, 0x00,  // &
+                    0x00, 0x00, 0x00, 0x04, 0x02, 0x00, 0x00, 0x00,  // '
+                    0x00, 0x00, 0x00, 0x3C, 0x42, 0x00, 0x00, 0x00,  // (
+                    0x00, 0x00, 0x00, 0x42, 0x3C, 0x00, 0x00, 0x00,  // )
+                    0x00, 0x10, 0x54, 0x38, 0x54, 0x10, 0x00, 0x00,  // *
+                    0x00, 0x10, 0x10, 0x7C, 0x10, 0x10, 0x00, 0x00,  // +
+                    0x00, 0x00, 0x00, 0x80, 0x60, 0x00, 0x00, 0x00,  // ,
+                    0x00, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00, 0x00,  // -
+                    0x00, 0x00, 0x00, 0x60, 0x60, 0x00, 0x00, 0x00,  // .
+                    0x00, 0x40, 0x20, 0x10, 0x08, 0x04, 0x00, 0x00,  // /
+
+                    0x3C, 0x62, 0x52, 0x4A, 0x46, 0x3C, 0x00, 0x00,  // 0
+                    0x44, 0x42, 0x7E, 0x40, 0x40, 0x00, 0x00, 0x00,  // 1
+                    0x64, 0x52, 0x52, 0x52, 0x52, 0x4C, 0x00, 0x00,  // 2
+                    0x24, 0x42, 0x42, 0x4A, 0x4A, 0x34, 0x00, 0x00,  // 3
+                    0x30, 0x28, 0x24, 0x7E, 0x20, 0x20, 0x00, 0x00,  // 4
+                    0x2E, 0x4A, 0x4A, 0x4A, 0x4A, 0x32, 0x00, 0x00,  // 5
+                    0x3C, 0x4A, 0x4A, 0x4A, 0x4A, 0x30, 0x00, 0x00,  // 6
+                    0x02, 0x02, 0x62, 0x12, 0x0A, 0x06, 0x00, 0x00,  // 7
+                    0x34, 0x4A, 0x4A, 0x4A, 0x4A, 0x34, 0x00, 0x00,  // 8
+                    0x0C, 0x52, 0x52, 0x52, 0x52, 0x3C, 0x00, 0x00,  // 9
+                    0x00, 0x00, 0x00, 0x48, 0x00, 0x00, 0x00, 0x00,  // :
+                    0x00, 0x00, 0x80, 0x64, 0x00, 0x00, 0x00, 0x00,  // ;
+                    0x00, 0x00, 0x10, 0x28, 0x44, 0x00, 0x00, 0x00,  // <
+                    0x00, 0x28, 0x28, 0x28, 0x28, 0x28, 0x00, 0x00,  // =
+                    0x00, 0x00, 0x44, 0x28, 0x10, 0x00, 0x00, 0x00,  // >
+                    0x00, 0x04, 0x02, 0x02, 0x52, 0x0A, 0x04, 0x00,  // ?
+
+                    0x00, 0x3C, 0x42, 0x5A, 0x56, 0x5A, 0x1C, 0x00,  // @
+                    0x7C, 0x12, 0x12, 0x12, 0x12, 0x7C, 0x00, 0x00,  // A
+                    0x7E, 0x4A, 0x4A, 0x4A, 0x4A, 0x34, 0x00, 0x00,  // B
+                    0x3C, 0x42, 0x42, 0x42, 0x42, 0x24, 0x00, 0x00,  // C
+                    0x7E, 0x42, 0x42, 0x42, 0x24, 0x18, 0x00, 0x00,  // D
+                    0x7E, 0x4A, 0x4A, 0x4A, 0x4A, 0x42, 0x00, 0x00,  // E
+                    0x7E, 0x0A, 0x0A, 0x0A, 0x0A, 0x02, 0x00, 0x00,  // F
+                    0x3C, 0x42, 0x42, 0x52, 0x52, 0x34, 0x00, 0x00,  // G
+                    0x7E, 0x08, 0x08, 0x08, 0x08, 0x7E, 0x00, 0x00,  // H
+                    0x00, 0x42, 0x42, 0x7E, 0x42, 0x42, 0x00, 0x00,  // I
+                    0x30, 0x40, 0x40, 0x40, 0x40, 0x3E, 0x00, 0x00,  // J
+                    0x7E, 0x08, 0x08, 0x14, 0x22, 0x40, 0x00, 0x00,  // K
+                    0x7E, 0x40, 0x40, 0x40, 0x40, 0x40, 0x00, 0x00,  // L
+                    0x7E, 0x04, 0x08, 0x08, 0x04, 0x7E, 0x00, 0x00,  // M
+                    0x7E, 0x04, 0x08, 0x10, 0x20, 0x7E, 0x00, 0x00,  // N
+                    0x3C, 0x42, 0x42, 0x42, 0x42, 0x3C, 0x00, 0x00,  // O
+
+                    0x7E, 0x12, 0x12, 0x12, 0x12, 0x0C, 0x00, 0x00,  // P
+                    0x3C, 0x42, 0x52, 0x62, 0x42, 0x3C, 0x00, 0x00,  // Q
+                    0x7E, 0x12, 0x12, 0x12, 0x32, 0x4C, 0x00, 0x00,  // R
+                    0x24, 0x4A, 0x4A, 0x4A, 0x4A, 0x30, 0x00, 0x00,  // S
+                    0x02, 0x02, 0x02, 0x7E, 0x02, 0x02, 0x02, 0x00,  // T
+                    0x3E, 0x40, 0x40, 0x40, 0x40, 0x3E, 0x00, 0x00,  // U
+                    0x1E, 0x20, 0x40, 0x40, 0x20, 0x1E, 0x00, 0x00,  // V
+                    0x3E, 0x40, 0x20, 0x30, 0x20, 0x40, 0x3E, 0x00,  // W
+                    0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x00, 0x00,  // X
+                    0x02, 0x04, 0x08, 0x70, 0x08, 0x04, 0x02, 0x00,  // Y
+                    0x42, 0x62, 0x52, 0x4A, 0x46, 0x42, 0x00, 0x00,  // Z
+                    0x00, 0x00, 0x7E, 0x42, 0x42, 0x00, 0x00, 0x00,  // [
+                    0x00, 0x04, 0x08, 0x10, 0x20, 0x40, 0x00, 0x00,  // <backslash>
+                    0x00, 0x00, 0x42, 0x42, 0x7E, 0x00, 0x00, 0x00,  // ]
+                    0x00, 0x08, 0x04, 0x7E, 0x04, 0x08, 0x00, 0x00,  // ^
+                    0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00,  // _
+
+                    0x3C, 0x42, 0x99, 0xA5, 0xA5, 0x81, 0x42, 0x3C,  // `
+                    0x00, 0x20, 0x54, 0x54, 0x54, 0x78, 0x00, 0x00,  // a
+                    0x00, 0x7E, 0x48, 0x48, 0x48, 0x30, 0x00, 0x00,  // b
+                    0x00, 0x00, 0x38, 0x44, 0x44, 0x44, 0x00, 0x00,  // c
+                    0x00, 0x30, 0x48, 0x48, 0x48, 0x7E, 0x00, 0x00,  // d
+                    0x00, 0x38, 0x54, 0x54, 0x54, 0x48, 0x00, 0x00,  // e
+                    0x00, 0x00, 0x00, 0x7C, 0x0A, 0x02, 0x00, 0x00,  // f
+                    0x00, 0x18, 0xA4, 0xA4, 0xA4, 0xA4, 0x7C, 0x00,  // g
+                    0x00, 0x7E, 0x08, 0x08, 0x08, 0x70, 0x00, 0x00,  // h
+                    0x00, 0x00, 0x00, 0x48, 0x7A, 0x40, 0x00, 0x00,  // i
+                    0x00, 0x00, 0x40, 0x80, 0x80, 0x7A, 0x00, 0x00,  // j
+                    0x00, 0x7E, 0x18, 0x24, 0x40, 0x00, 0x00, 0x00,  // k
+                    0x00, 0x00, 0x00, 0x3E, 0x40, 0x40, 0x00, 0x00,  // l
+                    0x00, 0x7C, 0x04, 0x78, 0x04, 0x78, 0x00, 0x00,  // m
+                    0x00, 0x7C, 0x04, 0x04, 0x04, 0x78, 0x00, 0x00,  // n
+                    0x00, 0x38, 0x44, 0x44, 0x44, 0x38, 0x00, 0x00,  // o
+
+                    0x00, 0xFC, 0x24, 0x24, 0x24, 0x18, 0x00, 0x00,  // p
+                    0x00, 0x18, 0x24, 0x24, 0x24, 0xFC, 0x80, 0x00,  // q
+                    0x00, 0x00, 0x78, 0x04, 0x04, 0x04, 0x00, 0x00,  // r
+                    0x00, 0x48, 0x54, 0x54, 0x54, 0x20, 0x00, 0x00,  // s
+                    0x00, 0x00, 0x04, 0x3E, 0x44, 0x40, 0x00, 0x00,  // t
+                    0x00, 0x3C, 0x40, 0x40, 0x40, 0x3C, 0x00, 0x00,  // u
+                    0x00, 0x0C, 0x30, 0x40, 0x30, 0x0C, 0x00, 0x00,  // v
+                    0x00, 0x3C, 0x40, 0x38, 0x40, 0x3C, 0x00, 0x00,  // w
+                    0x00, 0x44, 0x28, 0x10, 0x28, 0x44, 0x00, 0x00,  // x
+                    0x00, 0x1C, 0xA0, 0xA0, 0xA0, 0x7C, 0x00, 0x00,  // y
+                    0x00, 0x44, 0x64, 0x54, 0x4C, 0x44, 0x00, 0x00,  // z
+                    0x00, 0x08, 0x08, 0x76, 0x42, 0x42, 0x00, 0x00,  // {
+                    0x00, 0x00, 0x00, 0x7E, 0x00, 0x00, 0x00, 0x00,  // |
+                    0x00, 0x42, 0x42, 0x76, 0x08, 0x08, 0x00, 0x00,  // }
+                    0x00, 0x00, 0x04, 0x0A, 0x04, 0x00, 0x00, 0x00,  // ~ C градус
+            };
+
+    public static final int ROWS = 8;    //128 Pixels
+    public static final int COLUMNS = 16;     //64  Pixels
+
+    public static final byte SSD1306_Max_X = 127;    //128 Pixels
+    public static final byte SSD1306_Max_Y = 63;     //64  Pixels
+
+    public static final byte PAGE_MODE = 01;
+    public static final byte HORIZONTAL_MODE = 02;
+
+    public static final byte SSD1306_Address = 0x3C;
+    public static final byte SSD1306_Command_Mode = (byte) 0x80;
+    public static final byte SSD1306_Data_Mode = 0x40;
+    public static final byte SSD1306_Display_Off_Cmd = (byte) 0xAE;
+    public static final byte SSD1306_Display_On_Cmd = (byte) 0xAF;
+    public static final byte SSD1306_Normal_Display_Cmd = (byte) 0xA6;
+    public static final byte SSD1306_Inverse_Display_Cmd = (byte) 0xA7;
+    public static final byte SSD1306_Activate_Scroll_Cmd = 0x2F;
+    public static final byte SSD1306_Dectivate_Scroll_Cmd = 0x2E;
+    public static final byte SSD1306_Set_Brightness_Cmd = (byte) 0x81;
+
+    public static final byte Scroll_Left = 0x00;
+    public static final byte Scroll_Right = 0x01;
+
+    public static final byte Scroll_2Frames = 0x7;
+    public static final byte Scroll_3Frames = 0x4;
+    public static final byte Scroll_4Frames = 0x5;
+    public static final byte Scroll_5Frames = 0x0;
+    public static final byte Scroll_25Frames = 0x6;
+    public static final byte Scroll_64Frames = 0x1;
+    public static final byte Scroll_128Frames = 0x2;
+    public static final byte Scroll_256Frames = 0x3;
+
+    private int[] font = font8x8;
+    private int fontWidth = font8x8[0];
+
+    private I2CBus bus;
+    private I2CDevice i2CDevice;
+    private static final Logger LOG = LoggerFactory.getLogger(LCD_1306_driver.class);
+
+    public boolean invertedOutput = false;
+    //---------------------------------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------------------------
+
+    public LCD_1306_driver() {
+        try {
+            bus = I2CFactory.getInstance(I2CBus.BUS_1);
+            i2CDevice = bus.getDevice(SSD1306_Address);
+            init();
+        } catch (Throwable e) {
+            LOG.error("SSD1306 LCD controller init. Init I2C error:", e);
+        }
+    }
+    //---------------------------------------------------------------------------------------------------------------
+
+    public void sendCommand(int command) throws IOException {
+        byte buffer[] = new byte[]{((byte) (SSD1306_Command_Mode & 0xFF)), ((byte) (command & 0xFF))};
+        i2CDevice.write(buffer);           // Set OLED Command mode
+    }
+    //---------------------------------------------------------------------------------------------------------------
+
+    public void setFont(int[] font) {
+        this.font = font;
+        fontWidth = font[0];
+    }
+    //---------------------------------------------------------------------------------------------------------------
+
+    public void setTextXY(int row, int col) throws IOException {
+        sendCommand(0xB0 + row);                          //set page address
+        sendCommand(0x00 + (fontWidth * col & 0x0F));    //set column lower addr
+        sendCommand(0x10 + ((fontWidth * (col >> 4)) & 0x0F)); //set column higher addr
+    }
+    //---------------------------------------------------------------------------------------------------------------
+
+    private void sendData(int[] data) throws IOException {
+        byte buffer[] = new byte[data.length + 1];
+        buffer[0] = (byte) (SSD1306_Data_Mode & 0xFF);
+        for (int index = 0; index < data.length; index++) {
+            buffer[index + 1] = (byte) (data[index] & 0xFF);
+        }
+        i2CDevice.write(buffer);
+    }
+    //---------------------------------------------------------------------------------------------------------------
+
+    private void sendBytes(byte[] data) throws IOException {
+        byte buffer[] = new byte[data.length + 1];
+        buffer[0] = (byte) (SSD1306_Data_Mode & 0xFF);
+        for (int index = 0; index < data.length; index++) {
+            buffer[index + 1] = (data[index]);
+        }
+        i2CDevice.write(buffer);
+    }
+    //---------------------------------------------------------------------------------------------------------------
+
+    public void putChar(char ch) throws IOException {
+        if (font != null) {
+            //Ignore non-printable ASCII characters. This can be modified for
+            //multilingual font.
+            if (ch < 32 || ch > 127) {
+                ch = ' ';
+            }
+            if (!invertedOutput) {
+                int index = (ch - 32) * fontWidth + 2;
+                sendData(Arrays.copyOfRange(font, index, index + fontWidth));
+            } else {
+                int index = (ch - 32) * fontWidth + 2;
+                int subArr[] = Arrays.copyOfRange(font, index, index + fontWidth);
+                for (int subIndex = 0; subIndex < subArr.length; subIndex++ ){
+                    subArr[subIndex] = ~subArr[subIndex];
+                }
+                sendData(subArr);
+            }
+        }
+    }
+    //---------------------------------------------------------------------------------------------------------------
+
+    public void putString(String val) throws IOException {
+;        for (char anChar : val.toCharArray()){
+            putChar(anChar);
+        }
+    }
+    //---------------------------------------------------------------------------------------------------------------
+
+    public void clearDisplay() throws IOException {
+        byte i, j;
+        sendCommand(SSD1306_Display_Off_Cmd);     //display off
+        for (j = 0; j < 8; j++) {
+            setTextXY(j, 0);
+            {
+                for (i = 0; i < 16; i++)  //clear all columns
+                {
+                    putChar(' ');
+                }
+            }
+        }
+        sendCommand(SSD1306_Display_On_Cmd);     //display on
+        setTextXY(0, 0);
+    }
+
+    //---------------------------------------------------------------------------------------------------------------
+
+    public void init() throws IOException {
+        sendCommand(0xAE);            //display off
+        sendCommand(0xA6);            //Set Normal Display (default)
+        sendCommand(0xAE);            //DISPLAYOFF
+        sendCommand(0xD5);            //SETDISPLAYCLOCKDIV
+        sendCommand(0x80);            // the suggested ratio 0x80
+        sendCommand(0xA8);            //SSD1306_SETMULTIPLEX
+        sendCommand(0x3F);
+        sendCommand(0xD3);            //SETDISPLAYOFFSET
+        sendCommand(0x0);             //no offset
+        sendCommand(0x40 | 0x0);        //SETSTARTLINE
+        sendCommand(0x8D);            //CHARGEPUMP
+        sendCommand(0x14);
+        sendCommand(0x20);            //MEMORYMODE
+        sendCommand(0x00);            //0x0 act like ks0108
+        sendCommand(0xA1);            //SEGREMAP   Mirror screen horizontally (A0)
+        sendCommand(0xC8);            //COMSCANDEC Rotate screen vertically (C0)
+        sendCommand(0xDA);            //0xDA
+        sendCommand(0x12);            //COMSCANDEC
+        sendCommand(0x81);            //SETCONTRAST
+        sendCommand(0xCF);            //
+        sendCommand(0xd9);            //SETPRECHARGE
+        sendCommand(0xF1);
+        sendCommand(0xDB);            //SETVCOMDETECT
+        sendCommand(0x40);
+        sendCommand(0xA4);            //DISPLAYALLON_RESUME
+        sendCommand(0xA6);            //NORMALDISPLAY
+        clearDisplay();
+        sendCommand(0x2E);            //Stop scroll
+        sendCommand(0x20);            //Set Memory Addressing Mode
+        sendCommand(0x00);            //Set Memory Addressing Mode ab Horizontal addressing mode
+        setFont(font8x8);
+//        setTextXY(0, 0);
+//        putString("Something is    ");
+//        putString("wrong if you see");
+//        putString("this screen long");
+//        putString("time. Contact your");
+//        putString(" administrator. ");
+//        putString(":-(             ");
+    }
+
+    //---------------------------------------------------------------------------------------------------------------
+
+    //---------------------------------------------------------------------------------------------------------------
+
+    //---------------------------------------------------------------------------------------------------------------
+
+    //---------------------------------------------------------------------------------------------------------------
+
+    //---------------------------------------------------------------------------------------------------------------
+
+    //---------------------------------------------------------------------------------------------------------------
+
+
+}
+

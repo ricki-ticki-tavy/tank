@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script language="JavaScript">
+        var counter = 0;
+        function setFldVal(name, val){document.getElementById(name).innerHTML = val;}
+        function telemetryLoaded(response) {
+            var obj = JSON.parse(response);
+            if (obj != undefined) {
+                setFldVal("portExtender0Found", obj.portExtender0Found);
+                setFldVal("portExtender1Found", obj.portExtender1Found);
+                setFldVal("pwmFound", obj.pwmFound);
+                setFldVal("mainVoltage", obj.mainVoltage);
+                setFldVal("mainCurrentPeak", obj.mainCurrentPeak);
+                setFldVal("mainCurrentAvg", obj.mainCurrentAvg);
+                setFldVal("mbTempr", obj.mbTempr);
+                setFldVal("leftDriverTempr", obj.leftDriverTempr);
+                setFldVal("leftEngineTempr", obj.leftEngineTempr);
+                setFldVal("leftEngineVoltage", obj.leftEngineVoltage);
+                setFldVal("leftEngineCurrentPeak", obj.leftEngineCurrentPeak);
+                setFldVal("leftEngineCurrentAvg", obj.leftEngineCurrentAvg);
+                setFldVal("rightDriverTempr", obj.rightDriverTempr);
+                setFldVal("rightEngineTempr", obj.rightEngineTempr);
+                setFldVal("rightEngineVoltage", obj.rightEngineVoltage);
+                setFldVal("rightEngineCurrentPeak", obj.rightEngineCurrentPeak);
+                setFldVal("rightEngineCurrentAvg", obj.rightEngineCurrentAvg);
+                setFldVal("counter", counter++);
+            }
+            setTelemetryTimer();
+        }
+        function sendAsyncPOSTRequest(addr, data, callback, additionalParamsForCallBack) {
+            var xhr = new XMLHttpRequest();
+            //var server = location.protocol + "//" + location.hostname + "/";
+            var server = "http://192.168.4.1/";
+            xhr.open('POST', server + addr, false);
+            xhr.setRequestHeader('Content-type','application/x-www-form-urlencoded;charset=UTF-8');
+            xhr.onload = function (e) {if (xhr.readyState === 4) {if (xhr.status === 200) {if (callback) {callback(xhr.responseText, additionalParamsForCallBack);}} else {console.error(xhr.statusText);}}};
+            xhr.onerror = function (e) {alert(xhr.statusText);};
+            xhr.send(data);
+        }
+
+        function loadSettings(){
+            sendAsyncPOSTRequest("settings", "", telemetryLoaded);
+        }
+
+        function saveSettings(){
+            setTimeout(loadTelemetry, 100);
+        }
+    </script>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+</head>
+<body onload="loadSettings();">
+    <table>
+        <tr><td style="width: 200px">Parameter</td><td style="width: 200px">Value</td></tr>
+        <tr><td>startWifi</td><td><input  id="startWifi"></td></tr>
+        <tr><td>wifiPassword</td><td><input  id="wifiPassword"></td></tr>
+        <tr><td>wifiSSID</td><td><input  id="wifiSSID"></td></tr>
+        <tr><td>hostName</td><td><input  id="hostName"></td></tr>
+        <tr><td>--</td><td>--</td></tr>
+        <tr><td>coefP</td><td><input  id="coefP"></td></tr>
+        <tr><td>coefD</td><td><input  id="coefD"></td></tr>
+        <tr><td>coefI</td><td><input  id="coefI"></td></tr>
+        <tr><td>coefE</td><td><input  id="coefE"></td></tr>
+        <tr><td>maxAbsISum</td><td><input  id="maxAbsISum"></td></tr>
+        <tr><td>pidPeriodMs</td><td><input  id="pidPeriodMs"></td></tr>
+        <tr><td>diffMin</td><td><input  id="diffMin"></td></tr>
+        <tr><td>--</td><td>--</td></tr>
+        <tr><td>leftForwardPWMChannel</td><td><input  id="leftForwardPWMChannel"></td></tr>
+        <tr><td>leftBackwardPWMChannel</td><td><input  id="leftBackwardPWMChannel"></td></tr>
+        <tr><td>rightForwardPWMChannel</td><td><input  id="rightForwardPWMChannel"></td></tr>
+        <tr><td>rightBackwardPWMChannel</td><td><input  id="rightBackwardPWMChannel"></td></tr>
+        <tr><td>--</td><td>--</td></tr>
+        <tr><td>maxPower</td><td><input  id="maxPower"></td></tr>
+        <tr><td>minPower</td><td><input  id="minPower"></td></tr>
+        <tr><td>maxRotateSpeed</td><td><input  id="maxRotateSpeed"></td></tr>
+        <tr><td>encoderCountsPerRotate</td><td><input  id="encoderCountsPerRotate"></td></tr>
+        <tr><td>--</td><td>--</td></tr>
+        <tr><td>maxContinuousDriverCurrentMa</td><td><input  id="maxContinuousDriverCurrentMa"></td></tr>
+        <tr><td>maxPeakDriverCurrentMa</td><td><input  id="maxPeakDriverCurrentMa"></td></tr>
+        <tr><td>maxDriverTemperature</td><td><input  id="maxDriverTemperature"></td></tr>
+        <tr><td>maxEngineTemperature</td><td><input  id="maxEngineTemperature"></td></tr>
+        <tr><td>maxMBCurrentMa</td><td><input  id="maxMBCurrentMa"></td></tr>
+        <tr><td>minEngineVoltageMv</td><td><input  id="minEngineVoltageMv"></td></tr>
+        <tr><td>minTotalVoltageMv</td><td><input  id="minTotalVoltageMv"></td></tr>
+        <tr><td>telemetryIntervalMs</td><td><input  id="telemetryIntervalMs"></td></tr>
+        <tr><td>SMAPeakValues</td><td><input  id="SMAPeakValues"></td></tr>
+        <tr><td>SMAAvgValues</td><td><input  id="SMAAvgValues"></td></tr>
+        <tr><td>--</td><td>--</td></tr>
+        <tr><td>enginesEnabled</td><td><input  id="enginesEnabled"></td></tr>
+        <tr><td>--</td><td>--</td></tr>
+        <tr><td>mainCurrentAnalogChannel</td><td><input  id="mainCurrentAnalogChannel"></td></tr>
+        <tr><td>mainVoltageAnalogChannel</td><td><input  id="mainVoltageAnalogChannel"></td></tr>
+        <tr><td>mbTemprAnalogChannel</td><td><input  id="mbTemprAnalogChannel"></td></tr>
+        <tr><td>leftEngineCurrentAnalogChannel</td><td><input  id="leftEngineCurrentAnalogChannel"></td></tr>
+        <tr><td>leftEngineVoltageAnalogChannel</td><td><input  id="leftEngineVoltageAnalogChannel"></td></tr>
+        <tr><td>leftDriverTemprAnalogChannel</td><td><input  id="leftDriverTemprAnalogChannel"></td></tr>
+        <tr><td>leftEngineTemprAnalogChannel</td><td><input  id="leftEngineTemprAnalogChannel"></td></tr>
+        <tr><td>rightEngineCurrentAnalogChannel</td><td><input  id="rightEngineCurrentAnalogChannel"></td></tr>
+        <tr><td>rightEngineVoltageAnalogChannel</td><td><input  id="rightEngineVoltageAnalogChannel"></td></tr>
+        <tr><td>rightDriverTemprAnalogChannel</td><td><input  id="rightDriverTemprAnalogChannel"></td></tr>
+        <tr><td>rightEngineTemprAnalogChannel</td><td><input  id="rightEngineTemprAnalogChannel"></td></tr>
+        <tr><td>--</td><td>--</td></tr>
+        <tr><td><button onclick="saveSettings();">Save</button></td><td><button onclick="loadSettings();">Reset</button></td></tr>
+    </table>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<script type="application/javascript">
+
+    function sendPOSTRequest(addr, data) {
+        var xhr = new XMLHttpRequest();
+        var server = getServerName();
+        xhr.open('POST', server + addr, false);
+        xhr.setRequestHeader('Content-type','application/x-www-form-urlencoded;charset=UTF-8');
+        xhr.send(data);
+        if (xhr.status != 200) {
+            return "host error";
+        } else {
+            return xhr.responseText;
+        }
+    }
+
+    function setState(lamp, stateElement){
+        sendPOSTRequest("", "action=setSLamp&lamp=" + lamp + "&state=" + stateElement.checked);
+    }
+</script>
+<head>
+    <meta charset="UTF-8">
+    <title>ПРИВЕТ</title>
+</head>
+<body>
+   <span style="color:red">Лампа 1</span><input id="lamp1" onchange="setState(1, document.getElementById('lamp1'));" type="checkbox" value="123"/><br/>
+   <span style="color:red">Лампа 2</span><input id="lamp2" onchange="setState(2, document.getElementById('lamp2'));" type="checkbox" value="123"/><br/>
+   <span style="color:red">Лампа 2</span><input id="lamp3" onchange="setState(3, document.getElementById('lamp3'));" type="checkbox" value="123"/><br/>
+</body>
+</html>

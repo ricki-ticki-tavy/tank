@@ -1,0 +1,3 @@
+<role rolename="tankDriver"/>
+<user username="pi" password="raspberry" roles="manager-gui,manager-jmx,manager-status,manager-script"/>
+<user username="tankDriver" password="driver" roles="tankDriver"/>

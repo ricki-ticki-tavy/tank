@@ -1,0 +1,30 @@
+<html>
+<script type="application/javascript">
+
+    function sendPOSTRequest(addr, data) {
+        var xhr = new XMLHttpRequest();
+        if (!server) {
+            server = getServerName();
+        }
+        xhr.open('POST', server + addr, false);
+        xhr.setRequestHeader('Content-type','application/x-www-form-urlencoded;charset=UTF-8');
+        xhr.send(data);
+        if (xhr.status != 200) {
+            return "host error";
+        } else {
+            return xhr.responseText;
+        }
+    }
+
+    function setSpeed(){
+        sendPOSTRequest("", "action=setSpeed&value=" + document.getElementById("val").value);
+    }
+</script>
+<body>
+<div id="monitorSection" style="position:relative; width: 640px; height: 480px; top: 1px; left: 2px; border-style: solid; border-color: yellow; border-width: 1px;">
+    <input type="text" id="val" style="width: 100px"/>
+    <button onclick="setSpeed">setSpeed</button>
+</div>
+
+</body>
+</html>

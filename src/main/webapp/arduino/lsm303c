@@ -1,0 +1,75 @@
+#include <Wire.h>
+
+#define MAG 0x1E
+#define ACSEL 0x1D
+#define I2C_SPEED 100
+
+void setup()
+{
+   Serial.begin(250000);
+   TWBR = (F_CPU/(I2C_SPEED * 1000) - 16)/2;
+   Wire.begin();
+   delay(10);
+   writeToReg(ACSEL, 0x20, 0x1F); // 0001 1111  HR 0, ODR 001 (10Hz), BDU 1, ALLEN 111
+   writeToReg(ACSEL, 0x21, 0x0C); // 0000 1100
+   writeToReg(ACSEL, 0x23, 0xC4); //1100 0100 BW = 11 (50Hz)
+   writeToReg(ACSEL, 0x2E, 0x41); //0100 0001
+
+   writeTwoBytes(ACSEL, 0x3A, 182);
+   writeTwoBytes(ACSEL, 0x3C, 133);
+   writeTwoBytes(ACSEL, 0x3E, -20);
+//   writeToReg(MAG, 0x20, 0x00);
+}
+
+void writeTwoBytes(byte addr, byte reg, int data){
+  Wire.beginTransmission(addr);
+  Wire.write(reg);
+  byte d = data & 0xff;
+  Wire.write(d);
+  d = (data >> 8) & 0xff;
+  Wire.write(d);
+  Wire.endTransmission();
+
+//  writeToReg(addr, reg, data);
+//  writeToReg(addr, reg + 1, data >> 8);
+}
+
+void writeToReg(byte addr, byte reg, byte data){
+  Wire.beginTransmission(addr);
+  Wire.write(reg);
+  Wire.write(data);
+  Wire.endTransmission();
+}
+
+void readLSM(){
+  Serial.println("-----------------");
+  Wire.beginTransmission(ACSEL);
+  Wire.write(0x0F);
+  Wire.endTransmission();
+
+  Wire.requestFrom(ACSEL, 1);
+  while (Wire.available() < 1){}
+  Serial.println(Wire.read());
+
+
+  Serial.println("----");
+  Wire.beginTransmission(ACSEL);
+  Wire.write(0xA8);
+  Wire.endTransmission();
+
+  Wire.requestFrom(ACSEL, 6);
+  while (Wire.available() < 6){}
+   int val = Wire.read() | (Wire.read() << 8);
+  Serial.println(val);
+  val = Wire.read() | (Wire.read() << 8);
+  Serial.println(val);
+  val = Wire.read() | (Wire.read() << 8);
+  Serial.println(val);
+
+}
+
+void loop()
+{
+  readLSM();
+  delay(100);
+}

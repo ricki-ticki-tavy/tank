@@ -1,0 +1,317 @@
+
+#include <Wire.h>
+#include <EEPROM.h>
+#include <avr/io.h>
+#include <avr/wdt.h>
+
+int led = 13;
+
+int totalCurrent = 0;
+int mainVoltage = 2;
+int mainBoardCurrent = 1;
+int mainBoardVoltage = 3;
+int leftDriveVoltage = 6;
+int rightDriveVoltage = 7;
+
+int mainVoltageScale = 70; // 350 замер для 5-ти вольт
+
+byte I2CAdddress = 21;
+
+int mainVoltages[16];
+int leftEngineVoltages[16];
+int rightEngineVoltages[16];
+
+unsigned long preloadedTotalTimeMillis = 0;
+unsigned long totalTimeMillis = 0;
+unsigned long powerConsumed = 0;
+unsigned long lastTime = 0;
+unsigned long powerMetterInterval = 200;
+
+unsigned long lastDisplayTime;
+unsigned long displayInterval = 1000;
+
+unsigned long lastOtherVoltageTime = 0;
+unsigned long otherVoltageInterval = 100;
+
+unsigned long lastEEPROMWriteTime = 0;
+unsigned long EEPROMWriteInterval = 60000;
+int EPROM_adddress = 0;
+
+int lastCurrrent = 0;
+//int lastMainVoltage = 0;
+int lastMainBoardCurrent = 0;
+int lastMainBoardVoltage = 0;
+
+byte command = 0;
+
+void softReset(){
+  wdt_enable(WDTO_30MS);
+  while(1) {};
+}
+
+void addVoltageValueToArray(int value, int anArray[]){
+  for (byte index = 0; index < 15; index++){
+    anArray[index] = anArray[index + 1];
+  }
+  anArray[15] = value;
+}
+
+int getVoltageValueFromArray(int anArray[]){
+  int result = 0;
+  for (byte index = 0; index < 16; index++){
+    result += anArray[index];
+  }
+  return result >> 4;
+}
+
+void loadSavedDataFromEEPROM(){
+  byte buf4 = EEPROM.read(EPROM_adddress);
+  byte buf3 = EEPROM.read(EPROM_adddress + 1);
+  byte buf2 = EEPROM.read(EPROM_adddress + 2);
+  byte buf1 = EEPROM.read(EPROM_adddress + 3);
+
+  powerConsumed = long(buf4) << 24 | long(buf3) << 16 | long(buf2) << 8 | long(buf1);
+
+  buf2 = EEPROM.read(EPROM_adddress + 4);
+  buf1 = EEPROM.read(EPROM_adddress + 5);
+  int lastMainVoltage = long(buf2) << 8 | long(buf1);
+
+  // если текущее напряжение выше того, что было сохранено с предыдущего выключения хотя бы на пол вольта, то значит акк был заряжен и делаем сброс
+  int curVoltage = analogRead(mainVoltage);
+  if ((curVoltage - lastMainVoltage) > (mainVoltageScale >> 1)) {
+    // собственно заряжали
+    powerConsumed = 0;
+    preloadedTotalTimeMillis = 0;
+    saveEEPROMData();
+  } else {
+    for (byte index = 0; index < 15; index++){
+      mainVoltages[index] = lastMainVoltage;
+    }
+    // закончим загрузку данных. читаем накопленное время работы
+    buf4 = EEPROM.read(EPROM_adddress + 6);
+    buf3 = EEPROM.read(EPROM_adddress + 7);
+    buf2 = EEPROM.read(EPROM_adddress + 8);
+    buf1 = EEPROM.read(EPROM_adddress + 9);
+    preloadedTotalTimeMillis = long(buf4) << 24 | long(buf3) << 16 | long(buf2) << 8 | long(buf1);
+  }
+}
+
+void requestEvent() {
+//  Serial.print("I2C req. Cmd = ");
+//  Serial.println(command);
+  byte buffer[20];
+//  switch (command) {
+//    case 0x01 : {
+//       Serial.println("I2C send start ");
+        buffer[0] = (powerConsumed & 0xFF000000) >> 24;
+        buffer[1] = (powerConsumed & 0x00FF0000) >> 16;
+        buffer[2] = (powerConsumed & 0x0000FF00) >> 8;
+        buffer[3] = (powerConsumed & 0x000000FF);
+
+        int tempVoltage = getVoltageValueFromArray(mainVoltages);
+        buffer[4] = (tempVoltage & 0xFF00) >> 8;
+        buffer[5] = (tempVoltage & 0x00FF);
+
+        buffer[6] = (lastCurrrent & 0xFF00) >> 8;
+        buffer[7] = (lastCurrrent & 0x00FF);
+
+        buffer[8] = (lastMainBoardVoltage & 0xFF00) >> 8;
+        buffer[9] = (lastMainBoardVoltage & 0x00FF);
+
+        buffer[10] = (lastMainBoardCurrent & 0xFF00) >> 8;
+        buffer[11] = (lastMainBoardCurrent & 0x00FF);
+
+        tempVoltage = getVoltageValueFromArray(leftEngineVoltages);
+        buffer[12] = (tempVoltage & 0xFF00) >> 8;
+        buffer[13] = (tempVoltage & 0x00FF);
+
+        tempVoltage = getVoltageValueFromArray(rightEngineVoltages);
+        buffer[14] = (tempVoltage & 0xFF00) >> 8;
+        buffer[15] = (tempVoltage & 0x00FF);
+
+        unsigned long curMillis = millis() + preloadedTotalTimeMillis;
+        buffer[16] = (curMillis & 0xFF000000) >> 24;
+        buffer[17] = (curMillis & 0x00FF0000) >> 16;
+        buffer[18] = (curMillis & 0x0000FF00) >> 8;
+        buffer[19] = (curMillis & 0x000000FF);
+
+        Wire.write(buffer, 20);
+//        break;
+//      }
+//  }
+
+  command = 0;
+}
+
+void receiveEvent(int bytesAvail) {
+//  Serial.println("I2C re");
+  if (bytesAvail > 0) {
+//    Serial.println("   rd");
+    command = Wire.read();
+//    Serial.print("   cmd=");
+//    Serial.println(command);
+    switch (command) {
+      case 0x10 : {
+        powerConsumed = 0;
+        preloadedTotalTimeMillis = 0;
+        saveEEPROMData();
+        EEPROM.write(EPROM_adddress + 6, 0);
+        EEPROM.write(EPROM_adddress + 7, 0);
+        EEPROM.write(EPROM_adddress + 8, 0);
+        EEPROM.write(EPROM_adddress + 9, 0);
+        command = 0;
+//        softReset();
+        break;
+      }
+    }
+  }
+}
+
+
+void startI2C() {
+//  Serial.print("running I2C... ");
+  Wire.begin(I2CAdddress);
+  Wire.onReceive(receiveEvent); // register event
+  Wire.onRequest(requestEvent);
+//  Serial.println("started at address ");
+//  Serial.println(I2CAdddress);
+}
+
+void setup() {
+  pinMode(led, OUTPUT);
+//  Serial.begin(250000);
+//  Serial.println("Starting...");
+  startI2C();
+  loadSavedDataFromEEPROM();
+}
+
+int analogReadAvg(int pin){
+  long total= 0;
+  for (int index = 0; index < 32; index ++){
+    total += analogRead(pin);
+  }
+  return total >> 5;
+}
+
+/**
+   Чтение и расчет потребления от аккумулятора
+*/
+void readMainConsumption(int period) {
+  int newVal = analogReadAvg(totalCurrent);
+  if (newVal < 2) {
+    newVal = 0;
+  }
+  noInterrupts();
+  int avg = (newVal + lastCurrrent) >> 1;
+  lastCurrrent = newVal;
+  unsigned long avg_tmp = avg;
+  unsigned long period_tmp = period;
+  unsigned long thisTickConsumed = avg_tmp * period_tmp;
+  powerConsumed += thisTickConsumed;
+  interrupts();
+}
+
+/**
+   Замер всех прочих токов и напряжений
+*/
+void readOtherVoltages() {
+  int temp1 = analogRead(mainVoltage);
+  int temp2 = analogReadAvg(mainBoardCurrent);
+  int temp3 = analogRead(mainBoardVoltage);
+  int temp4 = analogRead(leftDriveVoltage);
+  int temp5 = analogRead(rightDriveVoltage);
+  noInterrupts();
+  addVoltageValueToArray(temp1, mainVoltages);
+  lastMainBoardCurrent = temp2;
+  lastMainBoardVoltage = temp3;
+  addVoltageValueToArray(temp4, leftEngineVoltages);
+  addVoltageValueToArray(temp5, rightEngineVoltages);
+  interrupts();
+}
+
+/**
+   Вывод в ком порт данных о текущем состоянии
+*/
+void doDisplay() {
+//  Serial.println("----------------------------------------------------");
+//  Serial.println(getVoltageValueFromArray(mainVoltages));
+//  Serial.println(lastCurrrent);
+//  Serial.println(lastMainBoardVoltage);
+//  Serial.println(lastMainBoardCurrent);
+//  Serial.println(getVoltageValueFromArray(leftEngineVoltages));
+//  Serial.println(getVoltageValueFromArray(rightEngineVoltages));
+//  Serial.println(powerConsumed);
+//  Serial.println(millis() + preloadedTotalTimeMillis);
+}
+
+/**
+   Сохраняет в еепром раз в минуту
+*/
+void saveEEPROMData() {
+  byte buf = (powerConsumed & 0xFF000000) >> 24;
+  EEPROM.write(EPROM_adddress, buf);
+  buf = (powerConsumed & 0x00FF0000) >> 16;
+  EEPROM.write(EPROM_adddress + 1, buf);
+  buf = (powerConsumed & 0x0000FF00) >> 8;
+  EEPROM.write(EPROM_adddress + 2, buf);
+  buf = (powerConsumed & 0x000000FF);
+  EEPROM.write(EPROM_adddress + 3, buf);
+
+  int lastMainVoltage = getVoltageValueFromArray(mainVoltages);
+  buf = (lastMainVoltage & 0xFF00) >> 8;
+  EEPROM.write(EPROM_adddress + 4, buf);
+  buf = (lastMainVoltage & 0x00FF);
+  EEPROM.write(EPROM_adddress + 5, buf);
+
+  unsigned long curMillis = millis() + preloadedTotalTimeMillis;
+  buf = (curMillis & 0xFF000000) >> 24;
+  EEPROM.write(EPROM_adddress + 6, buf);
+  buf = (curMillis & 0x00FF0000) >> 16;
+  EEPROM.write(EPROM_adddress + 7, buf);
+  buf = (curMillis & 0x0000FF00) >> 8;
+  EEPROM.write(EPROM_adddress + 8, buf);
+  buf = (curMillis & 0x000000FF);
+  EEPROM.write(EPROM_adddress + 9, buf);
+
+//  Serial.println("---------- EEPROM Saved -------------");
+}
+
+void readPowerValues() {
+  if (lastTime == 0) {
+    lastTime = millis();
+    lastCurrrent = analogRead(totalCurrent);
+  } else {
+    unsigned long now = millis();
+    unsigned long period = now - lastTime;
+
+    if (period >= powerMetterInterval) {
+      // пришло время снять показания
+      lastTime = now;
+      readMainConsumption(period);
+    }
+
+    period = now - lastOtherVoltageTime;
+    if (period >= otherVoltageInterval) {
+      readOtherVoltages();
+      lastOtherVoltageTime = now;
+    }
+
+    period = now - lastEEPROMWriteTime;
+    if (period >= EEPROMWriteInterval) {
+      saveEEPROMData();
+      lastEEPROMWriteTime = now;
+    }
+
+    period = now - lastDisplayTime;
+    if (period >= displayInterval) {
+      lastDisplayTime = now;
+//      doDisplay();
+    }
+  }
+}
+
+void loop() {
+  readPowerValues();
+//=  softReset();
+}
+

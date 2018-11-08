@@ -1,0 +1,166 @@
+body, html {
+    height: 100%;
+    background-color: darkgray;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+table#formCotainer {
+    width: 100%;
+    height: 100%;
+
+}
+
+tr#formHeader {
+    height: 100px;
+    background-color: aqua;
+}
+
+tr#formMenu {
+    height: 20px;
+    background-color: darkslategray;
+}
+
+table#manualControlContainer {
+    width: 100%;
+    background-color: crimson;
+    border-collapse: collapse;
+}
+
+table#sysInfoContainer tr {
+    height: 20px;
+    background-color: aquamarine;
+    font-size: 12px;
+    border-bottom: 1px solid black;
+}
+
+table#manualControlContainer tr {
+    background-color: aquamarine;
+}
+
+.sysParamLabel {
+    width: 80px;
+    padding-left: 10px;
+}
+
+td#monitorSection {
+    min-width: 300px;
+}
+
+.сamControlSection {
+    height: 40px;
+    max-height: 40px;
+}
+
+.сamControlSection td {
+    background-color: burlywood;
+    padding: 4px;
+}
+
+.sysParamValue {
+    text-align: right;
+    padding-right: 4px;
+    width: 80px
+}
+
+.engineParamValue {
+    text-align: center;
+    height: 40px;
+    font-size: 24px;
+}
+
+.sysInfoHeader {
+    height: 23px;
+    text-align: center;
+    background-color: #ad8858;
+    font-size: 16px;
+    color: yellow;
+}
+
+.driveSpeedValue {
+    width: 50%;
+    text-align: center;
+}
+
+.spacer {
+    height: 10px;
+    background-color: burlywood;
+}
+
+.camControlButtonCell {
+    width: 40px;
+    height: 46px;
+    padding: 3px;
+    background-color: burlywood;
+}
+
+.camControlButton {
+    width: 40px;
+    height: 40px;
+}
+
+.chartBody {
+    background-color: #626262;
+    border-style: solid;
+    border-color: yellow;
+    border-width: 1px;
+}
+
+
+.systemSettings {
+    height: 18px;
+}
+
+.systemSettingsRow {
+    height: 18px;
+}
+.systemSettingsInput {
+    width: 199px
+}
+.systemSettingsLabel{
+    width: 281px;
+    font-size: 14px;
+    border-bottom: 1px solid black;
+    border-right: 1px solid black;
+    padding-left: 5px;
+}
+.videoRecordRow{
+    height: 18px;
+}
+.videoRecordCell{
+    font-size: 14px;
+    height: 17px;
+    border-bottom: 1px solid black;
+    border-right: 1px solid black;
+    padding-left: 5px;
+}
+
+.systemSettingsValue{
+    width: 180px;
+    font-size: 14px;
+    border-bottom: 1px solid black;
+}
+
+.systemSettingsH1{
+    background-color: #f4cca3;
+    font-size: 16px;
+    text-align: center;
+    height: 18px;
+    border-bottom: 1px solid black;
+}
+
+.systemSettingsH2{
+    background-color: #f4cca3;
+    font-size: 14px;
+    text-align: center;
+    height: 14px;
+    color: dimgray;
+    border-bottom: 1px solid black;
+}
+
+.opacity__{
+    opacity: 0.25;
+}
